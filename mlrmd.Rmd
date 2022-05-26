@@ -2,8 +2,14 @@
 title: "R Data Science Course 9: MovieLens Project"
 author: "James Lo"
 date: "2022-05-26"
-output: pdf_document
+output: 
+  pdf_document:
+    latex_engine: xelatex
+    df_print: kable
+    toc : TRUE
+    toc_depth: 3
 urlcolor: blue
+mainfont: Calibri Light
 ---
 
 ```{r setup, include = FALSE}
@@ -12,7 +18,7 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE)
 
 # Introduction
 
-This project is part of the [EdX Harvard R Data Science program](https://www.edx.org/professional-certificate/harvardx-data-science). It is based on the real-life [Netflix Prize](https://netflixtechblog.com/netflix-recommendations-beyond-the-5-stars-part-1-55838468f429) challenge announced in 2006, where the streaming service company offered $1M in USD to anyone who could create a movie rating prediction algorithm that outperformed their then-current system by 10 %.
+This project is part of the [EdX Harvard R Data Science program](https://www.edx.org/professional-certificate/harvardx-data-science). It is based on the real-life [Netflix Prize](https://netflixtechblog.com/netflix-recommendations-beyond-the-5-stars-part-1-55838468f429) challenge announced in 2006, where the streaming service company offered \$1M in USD to anyone who could create a movie rating prediction algorithm that outperformed their then-current system by 10 %.
 
 The data used is a version of [MovieLens dataset](https://grouplens.org/datasets/movielens/) from grouplens.org with 10 million entries, each one representing a rating of a movie made by a user. The coding portion of the project is divided into three parts: exploratory analysis of the data, preparation and cleaning, and construction of the optimal machine learning model.
 
@@ -120,7 +126,7 @@ ncol(edx) # 6 cols
 
 The `edx` dataset has 9000055 rows (entries) and 6 columns (variables).
 
-### Number of Unique Movies and Users 
+### Number of Unique Movies and Users
 
 ```{r}
 # number of unique movies
@@ -146,6 +152,7 @@ edx %>%
             mean = mean(movies_rated),
             median = median(movies_rated))
 ```
+
 **Table 1: Summary statistics of movies rated by each user**
 
 ```{r}
@@ -158,6 +165,7 @@ edx %>%
   xlim(c(0, 2000)) +
   ggtitle('Distribution of Movies Rated by Each User')
 ```
+
 **Figure 1: A Histogram of the amount of movies rated by each user**
 
 Both the summary table and histogram indicated a heavily right-skewed distribution of movies rated by each user, with the majority of users having rated a low amount of movies, while the mean is inflated by a small proportion of prolific reviewers.
@@ -165,11 +173,13 @@ Both the summary table and histogram indicated a heavily right-skewed distributi
 ### Number of Ratings Received by Movies
 
 ```{r}
-# quick glance at the most frequently rated movies
+# quick glance at the 20 most frequently rated movies
 edx %>% group_by(title) %>% summarize(ratings = n()) %>%
-  arrange(desc(ratings))
+  arrange(desc(ratings)) %>%
+  head(.,20)
 ```
-**Table 2: A list of the dataset movie titles, arranged from most to least rated**
+
+**Table 2: 20 of the most frequently rated movies in the edx dataset**
 
 As expected, many of the most frequently rated movies in `edx` are popular releases that have left a lasting impact on popular culture, such as *Pulp Fiction* and *Jurassic Park*.
 
@@ -183,6 +193,7 @@ edx %>%
             mean = mean(ratings_received),
             median = median(ratings_received))
 ```
+
 **Table 3: Summary statistics of ratings received for each movie**
 
 ```{r}
@@ -195,6 +206,7 @@ edx %>%
   xlim(c(0, 10000)) +
   ggtitle('Distribution of Ratings Received by Each Film')
 ```
+
 **Figure 2: A histogram of the amount of ratings received for each movie**
 
 The distribution of ratings received by films is also heavily right-skewed, more extremely so than the distribution of user activities.
@@ -217,6 +229,7 @@ edx %>% separate_rows(genres, sep = "\\|") %>%
   summarize(count = n()) %>%
   arrange(desc(count))
 ```
+
 **Table 4: All the individual genres present in the dataset, arranged from most to least common**
 
 There are 19 separate genres (plus the 20th category, "no genres listed") within the `edx` dataset, some more popular than others. Only 7 movies have no genres listed. The most popular genre is Drama (featured in 3910127 ratings), while the least popular genre is IMAX ([more of a movie display method than an actual genre](https://www.collinsdictionary.com/dictionary/english/imax)) at 8181 ratings. Excluding IMAX and "no genres listed", the least popular genre is Documentary at 93066 ratings.
@@ -226,8 +239,19 @@ There are 19 separate genres (plus the 20th category, "no genres listed") within
 edx %>%
   group_by(genres) %>%
   summarize(count = n()) %>%
-  arrange(desc(count))
+  arrange(desc(count)) %>%
+  nrow()
 ```
+
+```{r}
+# examining data format
+edx %>%
+  group_by(genres) %>%
+  summarize(count = n()) %>%
+  arrange(desc(count)) %>%
+  head(.,20)
+```
+
 **Table 5: The genre combinations as they are stored in the dataset, arranged from most to least popular**
 
 However, the `genres` column stores genre information as character strings, with each string being a combination of genres separated by the character `|`. There are 797 such combinations. Movies listed as Dramas alone is the most popular at 733296 ratings received, and Drama is included in 6 out of the 10 most common values in the column. Comedies and Action films are also highly popular, corresponding to the ranking of individual genres displayed in Table 4.
@@ -237,6 +261,7 @@ However, the `genres` column stores genre information as character strings, with
 ```{r}
 mean(edx$rating)
 ```
+
 ```{r}
 median(edx$rating)
 ```
@@ -250,9 +275,10 @@ edx %>%
   summarize(counts = n()) %>%
   arrange(desc(counts))
 ```
+
 **Table 6: Ranking of the most commonly given rating scores**
 
-Movie ratings in `edx` are given as scores out of 5. No movie in the dataset got 0 points, while the lowest score present in the dataset (0.5) is also the least commonly given. Ratings of 4 and 3 are the most commonly given at 2588430 and 2121240	counts, respectively.
+Movie ratings in `edx` are given as scores out of 5. No movie in the dataset got 0 points, while the lowest score present in the dataset (0.5) is also the least commonly given. Ratings of 4 and 3 are the most commonly given at 2588430 and 2121240 counts, respectively.
 
 ```{r}
 # plot distribution of rating scores
@@ -263,9 +289,10 @@ edx %>%
   geom_bar(stat = 'identity') +
   ggtitle('Frequencies of Ratings Given')
 ```
+
 **Figure 3: A bar plot of the various ratings in the dataset given out by reviewers**
 
-Unlike the distribution of ratings given per user and ratings received per movie, the distribution of rating scores in `edx` is left-skewed, with the mean score of ~3.51 being lower than the median of 4. Ratings of whole numbers are more common than their neighboring decimal scores.
+Unlike the distribution of ratings given per user and ratings received per movie, the distribution of rating scores in `edx` is left-skewed, with the mean score of \~3.51 being lower than the median of 4. Ratings of whole numbers are more common than their neighboring decimal scores.
 
 The ratings are neither continuous nor perfectly categorical. Instead, they are an ordinal variable: the numbers are discrete and can be thought of as different categories, but there is a clear order between said categories. For instance, if an user actually rated a movie 3 out of 5, a prediction of 3.5 would be more accurate than 5 or 1.
 
@@ -273,7 +300,7 @@ The ratings are neither continuous nor perfectly categorical. Instead, they are 
 
 ### Model and Accuracy Metrics
 
-The dataset is large, but unevenly distributed. Attempting to construct an users x movies matrix would not be feasible given the limitations of the laptop used in this project. In addition, many of the more computationally intensive models such as K-Nearest Neighbors and Decision Trees could not be run due to the heavy demands on computational power and memory (corroborated by this student's attempts to build such models). As such, [a regression-based model](https://rafalab.github.io/dsbook/large-datasets.html#recommendation-systems) as described in the program's online textbook was chosen for analyzing the data. This technique was used in the original Netflix Prize challenge, where it was known as **[Normalization of Global Effects](http://blog.echen.me/2011/10/24/winning-the-netflix-prize-a-summary/)**
+The dataset is large, but unevenly distributed. Attempting to construct an users x movies matrix would not be feasible given the limitations of the laptop used in this project. In addition, many of the more computationally intensive models such as K-Nearest Neighbors and Decision Trees could not be run due to the heavy demands on computational power and memory (corroborated by this student's attempts to build such models). As such, [a regression-based model](https://rafalab.github.io/dsbook/large-datasets.html#recommendation-systems) as described in the program's online textbook was chosen for analyzing the data. This technique was used in the original Netflix Prize challenge, where it was known as [**Normalization of Global Effects**](http://blog.echen.me/2011/10/24/winning-the-netflix-prize-a-summary/)
 
 The linear model for can be written in the following format:
 
@@ -281,7 +308,7 @@ $$Y_i = \mu + b_{1} + b_{2} + ... + b_{n} + \epsilon$$
 
 Where $Y$ is the predicted rating, $\mu$ is the average rating across the entire dataset, and $n$ is the amount of predictors. $\epsilon$ is the residual error, which is assumed independent and averaging at 0. For a given predictor variable $x$, $b_x$ is the modeled effect of $x$ on movie ratings. $b_x$ was computed by grouping each predictor variable $x$ by its values, then taking the group means before subtracting $\mu$ **and all predictor effects before it**. Each rating prediction incorporated a value of $b_x$ depending on the rating's corresponding value of predictor $x$. The `dplyr` function `left_join()` was used to match rating entries with correct $b_x$ values, by the predictor $x$.
 
-Each model would produce a vector of continuous numeric variables as the predicted ratings. As such, the metric Root Mean Squared Errors [(RMSE)](https://towardsdatascience.com/what-are-rmse-and-mae-e405ce230383) was used; this was the same metric used in the original challenge. For this project, the threshold of success was set at RMSE < 0.86490.
+Each model would produce a vector of continuous numeric variables as the predicted ratings. As such, the metric Root Mean Squared Errors [(RMSE)](https://towardsdatascience.com/what-are-rmse-and-mae-e405ce230383) was used; this was the same metric used in the original challenge. For this project, the threshold of success was set at RMSE \< 0.86490.
 
 This project did not choose to compute the accuracy of rating predictions as categorical variables for multiple reasons. First, due to the ordinal nature of rating scores, treating ratings as purely categorical would not factor in margins of error. Second, even if the ratings are treated as ordinal categories, the heavily imbalanced distribution of ratings (see Table 6 and Figure 3) would lead to an [accuracy paradox](https://machinelearningmastery.com/tactics-to-combat-imbalanced-classes-in-your-machine-learning-dataset/) where during optimization, an algorithm is trained to simply predict the most common class at all times to raise accuracy.
 
@@ -289,13 +316,9 @@ This project did not choose to compute the accuracy of rating predictions as cat
 
 Note that groups means were taken to build the $b_x$ terms, even though the `edx` dataset contains uneven distributions of values in each variable; many such group means would inevitably be calculated from very small sample sizes, greatly increasing data noise and uncertainty in the predictions. To account for the heavily skewed movie and user representations, [a regularization technique](https://rafalab.github.io/dsbook/large-datasets.html#regularization) was used.
 
-The regularization formula was attached as a parameter to each $b_x$, and it can be written in the following format:
-$$1/(\lambda + n_i)$$
-Where $\lambda$ is the term, and $n_i$ is the sample size of the group $i$ within a given predictor variable. For a given $\lambda$, as $n_i$ increases $\lambda + n_i$ approximates $n_i$ alone, and the penalty term becomes less significant.
+The regularization formula was attached as a parameter to each $b_x$, and it can be written in the following format: $$1/(\lambda + n_i)$$ Where $\lambda$ is the term, and $n_i$ is the sample size of the group $i$ within a given predictor variable. For a given $\lambda$, as $n_i$ increases $\lambda + n_i$ approximates $n_i$ alone, and the penalty term becomes less significant.
 
-As an example, a regularized first predictor term $b_1$ for value $i$ would look like this:
-$$\hat{b_{1,i}}(\lambda) = \frac{1}{\lambda + n_i}\sum(Y_{1,i} - \hat{\mu})$$
-As seen in the formula, larger values of $\lambda$ shrinks the estimate $\hat{b_{1,i}}$ further, which translates to a heavier penalization at a given $n_i$.
+As an example, a regularized first predictor term $b_1$ for value $i$ would look like this: $$\hat{b_{1,i}}(\lambda) = \frac{1}{\lambda + n_i}\sum(Y_{1,i} - \hat{\mu})$$ As seen in the formula, larger values of $\lambda$ shrinks the estimate $\hat{b_{1,i}}$ further, which translates to a heavier penalization at a given $n_i$.
 
 ### Parameter Tuning
 
@@ -305,8 +328,7 @@ The optimal value for $\lambda$ depends on the group sample sizes involved. To t
 
 To compare the changes in performance as more predictors are included into the linear regression model, 7 iterations were trained on `edx_train` and their RMSEs computed by predicting ratings in `edx_test`. Model 1, derived from [the online textbook](https://rafalab.github.io/dsbook/large-datasets.html#a-first-model), included the movie and user effects. Its formula is displayed below:
 
-$$Y_{i,u} = \mu + b_i + b_u + \epsilon$$
-Where $b_i$ denotes an movie-specific effect, and $b_u$ denotes a user-specific effect.
+$$Y_{i,u} = \mu + b_i + b_u + \epsilon$$ Where $b_i$ denotes an movie-specific effect, and $b_u$ denotes a user-specific effect.
 
 #### Date Effect
 
@@ -314,7 +336,7 @@ The function `as.datetime()` from the `lubridate` package was used to convert al
 
 Models 2a1 and 2a2 incorporated regularized mean ratings, grouped by different time frames; 2a1 contained yearly means only, while 2a2 contained a term each for year- and month-specific effects. Their formulas are shown below:
 
-$$Y_{i,u,yr} = \mu + b_i + b_u + b_{yr}$$ 
+$$Y_{i,u,yr} = \mu + b_i + b_u + b_{yr}$$
 
 $$Y_{i,u,yr,mo} = \mu + b_i + b_u + b_{yr} + b_{mo}$$
 
@@ -322,27 +344,23 @@ Where $b_{yr}$ and $b_{mo}$ are year- and month-specific effects, respectively.
 
 For models 2b1 and 2b2, regularized average effects of dates (year-month-day, rather than years or months) on rating were taken and used to plot a smooth function using `loess()`. Both RMSEs and extent of smoothing were considered in choosing the final date-effect model. To check for under- or oversmoothing, smooth models were plotted at different spans. The formula for spans is given by the following expression:
 
-$$d / (lastdate - firstdate)$$
-Where $d$ is the amount of days included in the span. 
-
+$$d / (lastdate - firstdate)$$ Where $d$ is the amount of days included in the span.
 
 The formula is thus written as:
 
-$$Y_{i,u,d} = \mu + b_i + b_u + f(b_d) + \epsilon$$
-Where $f(b_d)$ is a smooth function of the date effect $b_d$.
+$$Y_{i,u,d} = \mu + b_i + b_u + f(b_d) + \epsilon$$ Where $f(b_d)$ is a smooth function of the date effect $b_d$.
 
 #### Genre Effect
 
 The sixth and seventh models factored in genre effects, in addition to the optimized model chosen from previous tuning runs (which included user, movie, and date effects). Model 3a grouped the values in the `genres` column as they are to compute regularized means, and is represented by the following formula:
 
-$$Y_{i,u,d,gg} = \mu + b_i + b_u + f(b_d) + b_{gg} + \epsilon$$
-Where $b_{gg}$ is the effect of genre combinations.
+$$Y_{i,u,d,gg} = \mu + b_i + b_u + f(b_d) + b_{gg} + \epsilon$$ Where $b_{gg}$ is the effect of genre combinations.
 
 For model 3b, a vector `genre_list` (containing all the `genre` column values in the dataset) was used with the function `str_detect()` (in the `stringr` package) to generate a logical matrix with 20 columns for the values in `genres`, and rows corresponding to ratings in the dataset. To generate average genre effects, the `sapply()` function and genre matrix were used to repeat the following steps for each genre listed in `genre_list`:
 
-- **Filter the rating residuals (with the mean and previous effects subtracted) for values whose indexes contain TRUE in the genre matrix column corresponding to the given genre.**
+-   **Filter the rating residuals (with the mean and previous effects subtracted) for values whose indexes contain TRUE in the genre matrix column corresponding to the given genre.**
 
-- **Then take the regularized average residual associated with the given genre.**
+-   **Then take the regularized average residual associated with the given genre.**
 
 To include each genre effect $b_g$ (stored in a vector produced by the `sapply()` function), the model is first fitted on `edx_test` with the other effects, then a `for()` loop is called on `genre_list` to add each genre's $b_g$ onto predicted ratings whose indexes correspond to `TRUE` values under the relevant genre matrix column. The final model is represented by the formula:
 
@@ -384,7 +402,6 @@ validation <- validation %>%
   select(-c(timestamp, title))
 ```
 
-
 After `year`, `month`, and `date` were created, the original `timestamp` column was no longer needed and therefore deleted.
 
 ### Partition edx Between Training and Testing Sets
@@ -419,6 +436,7 @@ rm(test_index)
 A 90-10 split was made using the `caret` package function `createDataPartition()`, while an arbitrary seed of 1 was set to ensure [reproducibility in the pseudo-random split](https://r-coder.com/set-seed-r/).
 
 ### Computing the baseline average
+
 ```{r}
 base_avg <- mean(edx_train$rating)
 ```
@@ -426,6 +444,7 @@ base_avg <- mean(edx_train$rating)
 The base average for training set ratings was calculated to be `r base_avg`.
 
 ### Creating the RMSE function
+
 ```{r}
 RMSE <- function(pred, real) {
   sqrt(mean((pred - real)^2))}
@@ -437,7 +456,7 @@ $$RMSE = \sqrt{\frac{\sum(\hat{Y} - Y)^2}n}$$
 
 ### Creating the Genre Matrices
 
-The code chunks displayed below are only included here to complete the methods section; tuning some of the later models with the genre matrices already saved resulted R running out of memory. Functional copies of the chunks below are included in the Results section, under the section for Model 3b.
+*The code chunks displayed below are deliberately kept from running with the R markdown option eval = FALSE, to save memory until the matrices are needed. Functional copies of the code are run in the Results section under model 3b, but hidden from the knitted .pdf file using include = FALSE to avoid redundancy.*
 
 ```{r, eval = FALSE}
 edx_train_genres <-
@@ -459,7 +478,7 @@ edx_test_genres <-
            str_detect(g, edx_test_genres$genres)})
 ```
 
-For each genre in `genre_list`, `str_detect()` checks if it exists in each row of the `genres` column, assigning `TRUE` if it does and `FALSE` if it doesn't. 
+For each genre in `genre_list`, `str_detect()` checks if it exists in each row of the `genres` column, assigning `TRUE` if it does and `FALSE` if it doesn't.
 
 # Results
 
@@ -495,6 +514,7 @@ rmses <- sapply(lambdas, function(l) { # do everything below for each lambda
 
 plot(lambdas, rmses) # for visualization during tuning
 ```
+
 **Figure 4: A plot of RMSEs and associated lambda regularization terms during the final stage of tuning model 1**
 
 ```{r}
@@ -544,6 +564,7 @@ rmses <- sapply(lambdas, function(l) { # do everything below for each lambda
 
 plot(lambdas, rmses) # for tuning purposes only
 ```
+
 **Figure 5: A plot of RMSEs and associated lambda regularization terms during the final stage of tuning model 2a1**
 
 ```{r}
@@ -600,6 +621,7 @@ rmses <- sapply(lambdas, function(l) { # do everything below for each lambda
 
 plot(lambdas, rmses) # for tuning only
 ```
+
 **Figure 6: A plot of RMSEs and associated lambda regularization terms during the final stage of tuning model 2a2**
 
 ```{r}
@@ -655,6 +677,7 @@ rmses <- sapply(lambdas, function(l) { # do everything below for each lambda
 
 plot(lambdas, rmses) # for tuning only
 ```
+
 **Figure 7: A plot of RMSEs and associated lambda regularization terms during the final stage of tuning model 2b1**
 
 ```{r}
@@ -700,6 +723,7 @@ plots <- for (s in spans) {
     ggtitle(paste('Span of', as.character(s), 'Days', sep = ' '))
   print(plot)}
 ```
+
 **Figures 8a-e: loess functions of average rating residuals over date. Residuals were grouped by date, then averaged with regularization (lambda = 5.22). Spans of 30, 60, 90, 180, 270, and 365 days were used.**
 
 All but the 365-day span exhibited signs of undersmoothing, with jagged portions along their graphs' trend lines. Despite the improved RMSE of Model 2b1, it ran the risk of overfitting the data by including signal noise.
@@ -751,6 +775,7 @@ rmses <- sapply(lambdas, function(l) { # do everything below for each lambda
 
 plot(lambdas, rmses) # tuning only
 ```
+
 **Figure 9: A plot of RMSEs and associated lambda regularization terms during the final stage of tuning model 2b2**
 
 ```{r}
@@ -795,6 +820,7 @@ plots <- for (s in spans) {
     ggtitle(paste('span of', as.character(s), 'days', sep = ' '))
   print(plot)}
 ```
+
 **Figures 10a-e: loess functions of average rating residuals over date. Residuals were grouped by date, then averaged with regularization (lambda = 5.09). Spans of 30, 60, 90, 180, 270, and 365 days were used.**
 
 Not much had changed, likely due to the small decrease in $\lambda$. However, if $\lambda$ was significantly decreased, one would expect more severe undersmoothing at the lower span lengths since weaker regularization leads to more inclusion of signal noise in the date-grouped average ratings. Also, the smooth function mostly remained around 0 on the y-axis (save for a small region around 1995, which has a gap in data points), suggesting that submission dates were a weak predictor of the scores given in ratings.
@@ -817,6 +843,7 @@ data.table(time_effects = c('year only', 'year and month'),
            grouped_means = c(train_rmse_2a1, train_rmse_2a2),
            smoothed = c(train_rmse_2b2, train_rmse_2b1))
 ```
+
 **Table 7: RMSE comparisons of date effects modeled through regularized grouped means versus smoothed loess functions. For the smoothed models, 'year only' and 'year and month' correspond to spans covering 365 and 30 days, respectively.**
 
 Given the same level of detail (year only versus year and month), the smooth model provided a lower RMSE than its grouped-means counterpart. Also, the smooth date model with a yearly span produced a lower RMSE than both versions of the grouped-means model. While the smooth model with monthly span had the lowest RMSE of the four, it was likely undersmoothed and therefore overfitted. As such, Model 2b2 (smooth date function, yearly span) was chosen to be further built on with genre effects.
@@ -880,6 +907,7 @@ rmses <- sapply(lambdas, function(l) { # do everything below for each lambda
 
 plot(lambdas, rmses) # tuning only
 ```
+
 **Figure 11: A plot of RMSEs and associated lambda regularization terms during the final stage of tuning model 3a**
 
 ```{r}
@@ -893,9 +921,9 @@ Model 3a returned an RMSE of `r train_rmse_3a`, with a $\lambda$ of `r lambda_3a
 
 ### Creating the Genre Matrices
 
-*(Refer to the Methods section for more explanation on the following code.)*
+*The functional code chunk for generating the matrices has been hidden using the R markdown option include = FALSE. Refer to the Methods section for a display of, and explanation on, the code used.*
 
-```{r}
+```{r, include = FALSE}
 edx_train_genres <-
   edx_train[,4] 
 
@@ -994,6 +1022,7 @@ rmses <- sapply(lambdas, function(l) { # do everything below for each lambda
 
 plot(lambdas, rmses) # tuning only
 ```
+
 **Figure 12: A plot of RMSEs and associated lambda regularization terms during the final stage of tuning model 3b**
 
 ```{r}
@@ -1018,9 +1047,10 @@ data.table(effects = c('model 1 (movie and user effects)',
                       lambda_2b2,
                       lambda_3a))
 ```
+
 **Table 8: A comparison of RMSEs and lambdas with models of increasing complexity.**
 
-As expected, including more predictors decreased the RMSE. The inclusion of date effects as a smooth function only decreased RMSE by about $2.67\times10^{-5}$ from model 1 (movie and user effects only), while the inclusion of genre groups decreased RMSE by about $3.47\times10^{-4}$ from model 2b2 (movie, user, and smoothed time function with yearly span) and $3.74\times10^{-4}$ from model 1. This discrepancy in RMSE improvements revealed that when building upon a model that already accounted for movies and users, genres were a more effective predictor of movie ratings than the dates on which those ratings were uploaded. 
+As expected, including more predictors decreased the RMSE. The inclusion of date effects as a smooth function only decreased RMSE by about $2.67\times10^{-5}$ from model 1 (movie and user effects only), while the inclusion of genre groups decreased RMSE by about $3.47\times10^{-4}$ from model 2b2 (movie, user, and smoothed time function with yearly span) and $3.74\times10^{-4}$ from model 1. This discrepancy in RMSE improvements revealed that when building upon a model that already accounted for movies and users, genres were a more effective predictor of movie ratings than the dates on which those ratings were uploaded.
 
 Meanwhile, the optimal $\lambda$ value increased by 0.15 from model 1 to 2b2, but decreased by 0.05 from 2b2 to 3a. Since the purpose of $\lambda$ is to penalize extreme values coming from small sample sizes, the most likely explanation was that the date effect smooth model used for 2b2 had more such extreme values than the genre combinations under the `genres` column in `edx`. While this project did not examine the distributions of ratings under each value in the `genres` column, graph series 8 and 10 in the Results section did reveal a section of relatively extreme fluctuation in average rating effects -and sparse data points- a few years following 1995.
 
@@ -1041,7 +1071,7 @@ rm(genre_list)
 gc() # freeing some memory
 ```
 
-```{r} 
+```{r}
 # validation run:
 # Iteration 3a; now using edx as train set and validation as "test" set
 span <- 365 / as.numeric(diff(range(edx_train$date)))
@@ -1110,23 +1140,21 @@ Another limitation of the model used in this project was an inability to account
 
 ### The Tuning Process
 
-For each iteration of the model tuned in this project, only one $\lambda$ was selected. This made each tuning attempt a compromise between the various predictor effects $b_x$, as each effect had different optimal amounts of regularization, but only one regularization term value could be used across all of them. Assigning a different $\lambda$ for each $b_x$ is theoretically possible, but also time-consuming. In addition, since the split between training and testing datasets is a (pseudo-)random process, any training RMSEs produced in a tuning process are effectively sample statistics, subject to sampling error. K-fold cross-validation and other techniques that assess average model accuracy through multiple train-test splits are thus another possible way to improve tuning effectiveness; this project deliberately avoided using them (see Methods section), but they would have been preferable alternatives if more RAM was available. 
+For each iteration of the model tuned in this project, only one $\lambda$ was selected. This made each tuning attempt a compromise between the various predictor effects $b_x$, as each effect had different optimal amounts of regularization, but only one regularization term value could be used across all of them. Assigning a different $\lambda$ for each $b_x$ is theoretically possible, but also time-consuming. In addition, since the split between training and testing datasets is a (pseudo-)random process, any training RMSEs produced in a tuning process are effectively sample statistics, subject to sampling error. K-fold cross-validation and other techniques that assess average model accuracy through multiple train-test splits are thus another possible way to improve tuning effectiveness; this project deliberately avoided using them (see Methods section), but they would have been preferable alternatives if more RAM was available.
 
 ### Alternative Algorithms
 
-Other machine learning algorithms could more effectively predict movie ratings using the variables given in the MovieLens dataset.[Singular Value Decomposition](https://datajobs.com/data-science-repo/Recommender-Systems-%5bNetflix%5d.pdf) (SVD), used by winners of the original challenge, is a matrix factorization approach that utilizes linear algebra to model the most important features within each predictor as a [matrix of latent features](https://pantelis.github.io/cs301/docs/common/lectures/recommenders/netflix/), then predicts movie ratings though computing the dot product of two such matrices (from movie and user IDs, in the original challenge). [Principal Component Analysis](http://nicolas-hug.com/blog/matrix_facto_1) (PCA) is another matrix factorization technique, and reduces the dimensionality of data with many predictor variables down to a smaller collection of principal components (PCs); those PCs represent [latent features](https://www.displayr.com/what-is-a-latent-variable/) in the data that [explain most of the outcome variance](https://builtin.com/data-science/step-step-explanation-principal-component-analysis). The [regression tree](https://www.nature.com/articles/nmeth.4370) is another algorithm that could be used, and could handle multiple predictor variables. While regression trees produce models that are intuitive for the human eye, their sensitivity to even small changes in the data structure often results in low accuracy. The [random forest](https://www.ibm.com/cloud/learn/random-forest) method mitigates the issue by aggregating predictions from multiple trees, raising accuracy at the expense of computational time and model readability. 
+Other machine learning algorithms could more effectively predict movie ratings using the variables given in the MovieLens dataset.[Singular Value Decomposition](https://datajobs.com/data-science-repo/Recommender-Systems-%5bNetflix%5d.pdf) (SVD), used by winners of the original challenge, is a matrix factorization approach that utilizes linear algebra to model the most important features within each predictor as a [matrix of latent features](https://pantelis.github.io/cs301/docs/common/lectures/recommenders/netflix/), then predicts movie ratings though computing the dot product of two such matrices (from movie and user IDs, in the original challenge). [Principal Component Analysis](http://nicolas-hug.com/blog/matrix_facto_1) (PCA) is another matrix factorization technique, and reduces the dimensionality of data with many predictor variables down to a smaller collection of principal components (PCs); those PCs represent [latent features](https://www.displayr.com/what-is-a-latent-variable/) in the data that [explain most of the outcome variance](https://builtin.com/data-science/step-step-explanation-principal-component-analysis). The [regression tree](https://www.nature.com/articles/nmeth.4370) is another algorithm that could be used, and could handle multiple predictor variables. While regression trees produce models that are intuitive for the human eye, their sensitivity to even small changes in the data structure often results in low accuracy. The [random forest](https://www.ibm.com/cloud/learn/random-forest) method mitigates the issue by aggregating predictions from multiple trees, raising accuracy at the expense of computational time and model readability.
 
 As previously mentioned in the Methods section, all of the models above are more computationally intensive than the Normalization of of Global Effects approach used in this project. While many R packages (such as [ranger](https://www.rdocumentation.org/packages/ranger/versions/0.13.1/topics/ranger) for random forests) exist to run machine learning algorithms more efficiently, [investing in more RAM and/or GPU](https://zindi.africa/learn/what-to-consider-when-choosing-a-laptop-for-machine-learning) would be worthwhile for further inquiries in machine learning.
 
 ## Project Summary
 
-Building on the regularized Normalization of Global Effects approach with movie and user effects (featured in course 8 of the EdX Harvard Data Science program), this project has built a predictive model that included the effects of movie ID, user ID, date of rating submission, and genre combinations on movie ratings. A movie's combination of genres was found to be a more effective predictor of rating scores than the date on which a reviewer rated a movie. Increasing the amount of predictors always lowered the RMSE, while the optimal regularization term $\lambda$ was determined by the presence of extreme values from small groups during the calculation of predictor effects. The optimized model produced a final RMSE of ~0.8644. More complex tuning techniques and algorithms could yield better accuracy, but would also require more computational power and time.
+Building on the regularized Normalization of Global Effects approach with movie and user effects (featured in course 8 of the EdX Harvard Data Science program), this project has built a predictive model that included the effects of movie ID, user ID, date of rating submission, and genre combinations on movie ratings. A movie's combination of genres was found to be a more effective predictor of rating scores than the date on which a reviewer rated a movie. Increasing the amount of predictors always lowered the RMSE, while the optimal regularization term $\lambda$ was determined by the presence of extreme values from small groups during the calculation of predictor effects. The optimized model produced a final RMSE of \~0.8644. More complex tuning techniques and algorithms could yield better accuracy, but would also require more computational power and time.
 
 # Citations
 
 All sources, both within and outside EdX, have been linked in the text referencing them. Below is a list of sources referenced in this project, in order of appearance:
-
-
 
 Harvard's [Professional Certificate in Data Science program](https://www.edx.org/professional-certificate/harvardx-data-science) on EdX, taught by Dr. Rafael Irizarry
 

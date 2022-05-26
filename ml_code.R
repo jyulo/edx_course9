@@ -116,7 +116,8 @@ edx %>%
 
 # quick glance at the most frequently rated movies
 edx %>% group_by(title) %>% summarize(ratings = n()) %>%
-  arrange(desc(ratings))
+  arrange(desc(ratings)) %>%
+  head(.,20)
 
 # distribution of how frequently each movie is rated
 edx %>%
@@ -150,6 +151,13 @@ edx %>%
   group_by(genres) %>%
   summarize(count = n()) %>%
   arrange(desc(count))
+
+# examining data format
+edx %>%
+  group_by(genres) %>%
+  summarize(count = n()) %>%
+  arrange(desc(count)) %>%
+  head(.,20)
 
 # Distribution of ratings
 mean(edx$rating)
